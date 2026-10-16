@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { CartProvider } from "./context/CartContext";
@@ -17,6 +18,8 @@ import NewArrivals from "./pages/NewArrivals";
 import BestSellers from "./pages/BestSellers";
 import Offers from "./pages/Offers";
 import WishlistPage from "./pages/WishlistPage";
+import ProductDetails from "./pages/ProductDetails";
+import Contact from "./pages/Contact";
 
 // Authentication pages
 import Login from "./pages/Login";
@@ -25,6 +28,9 @@ import Register from "./pages/Register";
 // Customer pages
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import MyOrders from "./pages/MyOrders";
+import OrderDetails from "./pages/OrderDetails";
+import Profile from "./pages/Profile";
 
 // Admin pages
 import AdminProducts from "./pages/AdminProducts";
@@ -33,7 +39,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminOrders from "./pages/AdminOrders";
 import Reports from "./pages/Reports";
 import AdminCoupons from "./pages/AdminCoupons";
-import Contact from "./pages/Contact";
 
 import "./index.css";
 
@@ -51,7 +56,7 @@ function App() {
                   {/* Home */}
                   <Route path="/" element={<Home />} />
 
-                  {/* Separate Shopping Pages */}
+                  {/* Shopping pages */}
                   <Route
                     path="/products"
                     element={<Products />}
@@ -72,6 +77,11 @@ function App() {
                     element={<Offers />}
                   />
 
+                  <Route
+                    path="/products/:id"
+                    element={<ProductDetails />}
+                  />
+
                   {/* Wishlist */}
                   <Route
                     path="/wishlist"
@@ -90,9 +100,14 @@ function App() {
                       element={<Register />}
                     />
                   </Route>
-                 <Route path="/contact" element={<Contact />} />
 
-                  {/* Login-required pages */}
+                  {/* Public contact */}
+                  <Route
+                    path="/contact"
+                    element={<Contact />}
+                  />
+
+                  {/* Login-required customer pages */}
                   <Route element={<ProtectedRoute />}>
                     <Route
                       path="/cart"
@@ -103,9 +118,24 @@ function App() {
                       path="/checkout"
                       element={<Checkout />}
                     />
+
+                    <Route
+                      path="/orders"
+                      element={<MyOrders />}
+                    />
+
+                    <Route
+                      path="/orders/:id"
+                      element={<OrderDetails />}
+                    />
+
+                    <Route
+                      path="/profile"
+                      element={<Profile />}
+                    />
                   </Route>
 
-                  {/* Admin pages */}
+                  {/* Admin-only pages */}
                   <Route element={<AdminRoute />}>
                     <Route
                       path="/admin"
@@ -138,7 +168,7 @@ function App() {
                     />
                   </Route>
 
-                  {/* 404 Page */}
+                  {/* 404 page */}
                   <Route
                     path="*"
                     element={

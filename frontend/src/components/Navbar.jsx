@@ -23,26 +23,19 @@ import {
   Package,
   Phone,
   Home,
+  LayoutDashboard,
 } from "lucide-react";
 
 import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
+import { useAuth } from "../context/AuthContext";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-/* Separate navigation routes */
 const navigation = [
-  {
-    label: "Home",
-    to: "/",
-    icon: Home,
-  },
-  {
-    label: "Shop",
-    to: "/products",
-    icon: ShoppingBag,
-  },
+  { label: "Home", to: "/", icon: Home },
+  { label: "Shop", to: "/products", icon: ShoppingBag },
   {
     label: "New Arrivals",
     to: "/products/new-arrivals",
@@ -61,26 +54,13 @@ const navigation = [
   },
 ];
 
-/* Read logged-in user */
-function getStoredUser() {
-  try {
-    return JSON.parse(
-      localStorage.getItem("user") ||
-        localStorage.getItem("currentUser") ||
-        "null"
-    );
-  } catch {
-    return null;
-  }
-}
-
-/* Get cart/wishlist count */
 function getCount(data) {
   if (typeof data === "number") return data;
 
   if (Array.isArray(data)) {
     return data.reduce(
-      (total, item) => total + Math.max(0, Number(item?.quantity) || 1),
+      (total, item) =>
+        total + Math.max(0, Number(item?.quantity) || 1),
       0
     );
   }
@@ -89,11 +69,17 @@ function getCount(data) {
 
   if (Array.isArray(data.items)) return getCount(data.items);
   if (Array.isArray(data.cart)) return getCount(data.cart);
-  if (Array.isArray(data.wishlistItems)) return data.wishlistItems.length;
-  if (Array.isArray(data.wishlist)) return data.wishlist.length;
+  if (Array.isArray(data.wishlistItems)) {
+    return data.wishlistItems.length;
+  }
+  if (Array.isArray(data.wishlist)) {
+    return data.wishlist.length;
+  }
 
   return (
-    Number(data.cartCount ?? data.wishlistCount ?? data.count ?? 0) || 0
+    Number(
+      data.cartCount ?? data.wishlistCount ?? data.count ?? 0
+    ) || 0
   );
 }
 
@@ -118,6 +104,13 @@ export default function Navbar() {
   const cartData = useCart();
   const wishlistData = useWishlist();
 
+  const { user, isAuthenticated, logout } = useAuth();
+
+  // Only authenticated administrators see the dashboard link.
+  const isAdmin =
+    isAuthenticated &&
+    String(user?.role || "").toLowerCase() === "admin";
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -126,7 +119,6 @@ export default function Navbar() {
     new URLSearchParams(location.search).get("search") || ""
   );
   const [categories, setCategories] = useState([]);
-  const [user, setUser] = useState(getStoredUser);
 
   const cartCount = getCount(
     cartData?.cartCount ??
@@ -144,7 +136,6 @@ export default function Navbar() {
       []
   );
 
-  /* Close menus after navigation */
   useEffect(() => {
     setMobileOpen(false);
     setCategoryOpen(false);
@@ -152,14 +143,12 @@ export default function Navbar() {
     setSearchOpen(false);
   }, [location.pathname, location.search]);
 
-  /* Sync search with URL */
   useEffect(() => {
     setSearchText(
       new URLSearchParams(location.search).get("search") || ""
     );
   }, [location.search]);
 
-  /* Load categories */
   useEffect(() => {
     let active = true;
 
@@ -175,7 +164,9 @@ export default function Navbar() {
           ? result
           : result.categories || result.data || [];
 
-        if (active) setCategories(list);
+        if (active) {
+          setCategories(Array.isArray(list) ? list : []);
+        }
       } catch (error) {
         console.error("Could not load categories:", error);
       }
@@ -188,7 +179,6 @@ export default function Navbar() {
     };
   }, []);
 
-  /* Search products */
   function handleSearch(event) {
     event.preventDefault();
 
@@ -196,27 +186,24 @@ export default function Navbar() {
 
     if (!query) {
       navigate("/products");
-      setSearchOpen(false);
-      return;
+    } else {
+      navigate(`/products?search=${encodeURIComponent(query)}`);
     }
 
-    navigate(`/products?search=${encodeURIComponent(query)}`);
     setMobileOpen(false);
     setSearchOpen(false);
   }
 
-  /* Logout */
   function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("currentUser");
-
-    setUser(null);
+    logout();
     setAccountOpen(false);
     setMobileOpen(false);
+    navigate("/login", { replace: true });
+  }
 
+  function openLogin() {
+    setAccountOpen(false);
+    setMobileOpen(false);
     navigate("/login");
   }
 
@@ -272,6 +259,10 @@ export default function Navbar() {
         <Link
           key={getCategoryId(category)}
           to={`/products?category=${encodeURIComponent(name)}`}
+          onClick={() => {
+            setCategoryOpen(false);
+            setMobileOpen(false);
+          }}
           className={
             mobile
               ? "block rounded-xl px-3 py-3 text-sm text-slate-600 hover:bg-violet-50 hover:text-violet-700"
@@ -285,12 +276,34 @@ export default function Navbar() {
   }
 
   function renderAccountLinks(mobile = false) {
-    if (user) {
+    if (isAuthenticated) {
       return (
         <>
+          {/* Admin Dashboard: admin accounts only */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              onClick={() => {
+                setAccountOpen(false);
+                setMobileOpen(false);
+              }}
+              className={
+                mobile
+                  ? "flex items-center justify-center gap-2 rounded-xl bg-violet-100 px-3 py-3 text-sm font-bold text-violet-800 transition hover:bg-violet-200"
+                  : "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-violet-700 transition hover:bg-violet-50"
+              }
+            >
+              <LayoutDashboard size={17} />
+              Admin Dashboard
+            </Link>
+          )}
+
           <Link
             to="/orders"
-            onClick={() => setAccountOpen(false)}
+            onClick={() => {
+              setAccountOpen(false);
+              setMobileOpen(false);
+            }}
             className={
               mobile
                 ? "flex items-center justify-center gap-2 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700"
@@ -319,21 +332,24 @@ export default function Navbar() {
 
     return (
       <>
-        <Link
-          to="/login"
-          onClick={() => setAccountOpen(false)}
+        <button
+          type="button"
+          onClick={openLogin}
           className={
             mobile
               ? "rounded-xl bg-violet-700 px-3 py-3 text-center text-sm font-bold text-white"
-              : "mt-2 block rounded-xl bg-violet-700 px-3 py-2.5 text-center text-sm font-bold text-white hover:bg-violet-800"
+              : "mt-2 block w-full rounded-xl bg-violet-700 px-3 py-2.5 text-center text-sm font-bold text-white hover:bg-violet-800"
           }
         >
           Login
-        </Link>
+        </button>
 
         <Link
           to="/register"
-          onClick={() => setAccountOpen(false)}
+          onClick={() => {
+            setAccountOpen(false);
+            setMobileOpen(false);
+          }}
           className={
             mobile
               ? "rounded-xl border border-slate-200 px-3 py-3 text-center text-sm font-bold text-slate-700"
@@ -433,12 +449,16 @@ export default function Navbar() {
               className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-slate-700 transition hover:border-violet-300 hover:bg-violet-50"
             >
               <UserRound size={20} />
+
               <span className="hidden max-w-28 truncate text-sm font-bold lg:inline">
                 {user?.name || user?.username || "Account"}
               </span>
+
               <ChevronDown
                 size={15}
-                className={`transition ${accountOpen ? "rotate-180" : ""}`}
+                className={`transition ${
+                  accountOpen ? "rotate-180" : ""
+                }`}
               />
             </button>
 
@@ -448,12 +468,21 @@ export default function Navbar() {
                   <p className="truncate text-sm font-bold text-slate-900">
                     {user?.name || user?.username || "Welcome to ShopNest"}
                   </p>
+
                   <p className="mt-1 truncate text-xs text-slate-500">
                     {user?.email || "Manage your account"}
                   </p>
+
+                  {isAdmin && (
+                    <span className="mt-2 inline-flex rounded-full bg-violet-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+                      Administrator
+                    </span>
+                  )}
                 </div>
 
-                {renderAccountLinks()}
+                <div className="space-y-1 pt-1">
+                  {renderAccountLinks()}
+                </div>
               </div>
             )}
           </div>
@@ -556,7 +585,9 @@ export default function Navbar() {
               Categories
               <ChevronDown
                 size={15}
-                className={`transition ${categoryOpen ? "rotate-180" : ""}`}
+                className={`transition ${
+                  categoryOpen ? "rotate-180" : ""
+                }`}
               />
             </button>
 
@@ -564,6 +595,7 @@ export default function Navbar() {
               <div className="absolute left-1/2 top-full z-50 w-64 -translate-x-1/2 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl">
                 <Link
                   to="/products"
+                  onClick={() => setCategoryOpen(false)}
                   className="mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-violet-700 hover:bg-violet-50"
                 >
                   <ShoppingBag size={17} />
@@ -575,13 +607,13 @@ export default function Navbar() {
             )}
           </div>
 
-       <Link
-  to="/contact"
-  className="flex items-center gap-1.5 whitespace-nowrap py-3.5 text-sm font-semibold text-slate-600 transition hover:text-violet-700"
->
-  <Phone size={15} />
-  Contact
-</Link>
+          <Link
+            to="/contact"
+            className="flex items-center gap-1.5 whitespace-nowrap py-3.5 text-sm font-semibold text-slate-600 transition hover:text-violet-700"
+          >
+            <Phone size={15} />
+            Contact
+          </Link>
         </div>
       </nav>
 
@@ -599,6 +631,7 @@ export default function Navbar() {
 
             <Link
               to="/products"
+              onClick={() => setMobileOpen(false)}
               className="block rounded-xl px-3 py-3 text-sm font-semibold text-violet-700 hover:bg-violet-50"
             >
               All Products
@@ -608,13 +641,25 @@ export default function Navbar() {
 
             <Link
               to="/#contact"
+              onClick={() => setMobileOpen(false)}
               className="mt-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-violet-50"
             >
               <Phone size={17} />
               Contact Us
             </Link>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+            <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+              {isAuthenticated && (
+                <div className="rounded-xl border border-slate-100 px-3 py-3">
+                  <p className="truncate text-sm font-bold text-slate-900">
+                    {user?.name || user?.username || "Account"}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-slate-500">
+                    {user?.email || ""}
+                  </p>
+                </div>
+              )}
+
               {renderAccountLinks(true)}
             </div>
           </div>

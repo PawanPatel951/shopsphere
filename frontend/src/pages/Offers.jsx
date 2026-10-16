@@ -119,12 +119,12 @@ function Offers() {
             </p>
 
             <Link
-              to="/products"
-              className="mt-7 inline-flex items-center gap-3 rounded-xl bg-white px-6 py-3.5 font-extrabold text-rose-700 transition hover:bg-rose-50"
-            >
-              Explore All Products
-              <ArrowRight size={18} />
-            </Link>
+  to="/products"
+  className="mt-7 inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 px-6 py-3.5 font-extrabold text-white shadow-lg shadow-rose-500/25 transition-all duration-300 hover:-translate-y-1 hover:from-rose-700 hover:to-pink-700 hover:shadow-xl"
+>
+  Explore All Products
+  <ArrowRight size={18} />
+</Link>
           </div>
         </div>
 

@@ -23,6 +23,12 @@ function AdminRoute() {
       />
     );
   }
+console.log("ADMIN ROUTE CHECK:", {
+  user,
+  role: user?.role,
+  isAuthenticated,
+  authLoading,
+});
 
   if (user?.role !== "admin") {
     return <Navigate to="/" replace />;

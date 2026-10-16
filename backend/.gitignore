@@ -1,0 +1,13 @@
+@"
+node_modules/
+.env
+.env.*
+!.env.example
+logs/
+*.log
+coverage/
+*.bak
+*.before-invoice-fix.bak
+.DS_Store
+Thumbs.db
+"@ | Set-Content .\backend\.gitignore -Encoding utf8
